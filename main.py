@@ -53,8 +53,10 @@ def start_serial_reading(serial_inst):
     thread.start()
 
 def control_centre(serial_inst):
+    c = 0
     actual_date = datetime.now().strftime('%Y-%m-%d_%H-%M')
     file_name = f'data_{actual_date}.csv'
+
 #rssi, temp, cisnienie, swiatlo %, wilgotnosc, lat, long
     try:
         while True:
@@ -65,8 +67,9 @@ def control_centre(serial_inst):
 
                 elements = data.split()
                 numeric_data = [element for element in elements]
+                numeric_data[2] = float(numeric_data[2])
                 #altitude = 4330*(1-pow(((numeric_data[2]/100)/1013),0.1903))
-                altitude = (1 - pow(((float(numeric_data[2])/100)/974),0.1903)) * 4330
+                altitude = (1 - pow(((float(numeric_data[2])/100)/979.5),0.1903)) * 4330
                 numeric_data.append(altitude)
                 list_of_data.append(numeric_data)
                 if writing_data == 1:
@@ -77,8 +80,12 @@ def control_centre(serial_inst):
                             writer.writerow(['RSSI', 'Temperature', 'Pressure', 'Light Value', 'Humidity', 'Latitude', 'Longitude'])
 
                         writer.writerow(numeric_data)
+                if c == 0:
+                    draw_chart2(list_of_data, c)
+                else:
+                    c = 1
+                    draw_chart2(list_of_data, c)
 
-                draw_chart2(list_of_data)
     except KeyboardInterrupt:
         print("END")
     finally:
@@ -121,7 +128,21 @@ def draw_chart(data_list):
     canvas = FigureCanvasTkAgg(figure, master=app)
     canvas.get_tk_widget().pack()
 
-def draw_chart2(data_list):
+
+import tkinter as tk
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import customtkinter  # Assuming this is a custom module used for labeling
+from datetime import datetime
+
+
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
+
+def draw_chart2(data_list, n):
+
     if not hasattr(draw_chart2, 'figure'):
         draw_chart2.figure = Figure(figsize=(30, 20), dpi=100)
         draw_chart2.ax1 = draw_chart2.figure.add_subplot(2, 2, 1)
@@ -160,21 +181,25 @@ def draw_chart2(data_list):
     draw_chart2.ax3.set_ylabel('Light Value')
     draw_chart2.ax4.set_ylabel('Altitude')
 
+
     current_values = data_list[-1]
-    subtitle1 = customtkinter.CTkLabel(master=app, text=current_values[1])
-    subtitle1.place(relx=0.3, rely=0.1, anchor=tk.CENTER)
-    subtitle2 = customtkinter.CTkLabel(master=app, text=current_values[2])
-    subtitle2.place(relx=0.75, rely=0.1, anchor=tk.CENTER)
-    subtitle3 = customtkinter.CTkLabel(master=app, text=current_values[7])
-    subtitle3.place(relx=0.3, rely=0.52, anchor=tk.CENTER)
-    subtitle4 = customtkinter.CTkLabel(master=app, text=current_values[4])
-    subtitle4.place(relx=0.75, rely=0.52, anchor=tk.CENTER)
+    subtitle1 = customtkinter.CTkLabel(master=app, text="Temperature: " + current_values[1])
+    subtitle2 = customtkinter.CTkLabel(master=app, text="Pressure: " + str(current_values[2]))
+    subtitle3 = customtkinter.CTkLabel(master=app, text="Light Value: " + current_values[3])
+    subtitle4 = customtkinter.CTkLabel(master=app, text="Altitude: " + str(current_values[7]))
     subtitle5 = customtkinter.CTkLabel(master=app, text=("RSSI: " + current_values[0]))
-    subtitle5.place(relx=0.05, rely=0.05, anchor=tk.CENTER)
     subtitle6 = customtkinter.CTkLabel(master=app, text=("Latitude: " + current_values[5]))
-    subtitle6.place(relx=0.05, rely=0.15, anchor=tk.CENTER)
     subtitle7 = customtkinter.CTkLabel(master=app, text=("Longitude: " + current_values[6]))
+
+    subtitle1.place(relx=0.3, rely=0.1, anchor=tk.CENTER)
+    subtitle2.place(relx=0.75, rely=0.1, anchor=tk.CENTER)
+    subtitle3.place(relx=0.3, rely=0.52, anchor=tk.CENTER)
+    subtitle4.place(relx=0.75, rely=0.52, anchor=tk.CENTER)
+    subtitle5.place(relx=0.05, rely=0.05, anchor=tk.CENTER)
+    subtitle6.place(relx=0.05, rely=0.15, anchor=tk.CENTER)
     subtitle7.place(relx=0.05, rely=0.25, anchor=tk.CENTER)
+
+    n = 1
     draw_chart2.figure.canvas.draw()
     draw_chart2.figure.canvas.flush_events()
 
