@@ -55,7 +55,7 @@ def start_serial_reading(serial_inst):
 def control_centre(serial_inst):
     actual_date = datetime.now().strftime('%Y-%m-%d_%H-%M')
     file_name = f'data_{actual_date}.csv'
-
+#rssi, temp, cisnienie, swiatlo %, wilgotnosc, lat, long
     try:
         while True:
             if serial_inst.in_waiting:
@@ -64,15 +64,17 @@ def control_centre(serial_inst):
                 print(data)
 
                 elements = data.split()
-                numeric_data = [float(element) for element in elements]
-
+                numeric_data = [element for element in elements]
+                #altitude = 4330*(1-pow(((numeric_data[2]/100)/1013),0.1903))
+                altitude = (1 - pow(((float(numeric_data[2])/100)/974),0.1903)) * 4330
+                numeric_data.append(altitude)
                 list_of_data.append(numeric_data)
                 if writing_data == 1:
                     with open(file_name, 'a', newline='') as csv_file:
                         writer = csv.writer(csv_file)
 
                         if csv_file.tell() == 0:
-                            writer.writerow(['Temperature', 'Pressure', 'Light Value', 'Humidity', 'Latitude', 'Longitude'])
+                            writer.writerow(['RSSI', 'Temperature', 'Pressure', 'Light Value', 'Humidity', 'Latitude', 'Longitude'])
 
                         writer.writerow(numeric_data)
 
@@ -130,7 +132,7 @@ def draw_chart2(data_list):
         draw_chart2.ax1.set_title('Temperature')
         draw_chart2.ax2.set_title('Pressure')
         draw_chart2.ax3.set_title('Light Value')
-        draw_chart2.ax4.set_title('Humidity')
+        draw_chart2.ax4.set_title('Altitude')
 
         canvas = FigureCanvasTkAgg(draw_chart2.figure, master=app)
         canvas.get_tk_widget().pack()
@@ -141,10 +143,12 @@ def draw_chart2(data_list):
     if len(data_list) > 100:
         data_list = data_list[-100:]
 
-    draw_chart2.ax1.plot([row[0] for row in data_list], linestyle='-')
-    draw_chart2.ax2.plot([row[1] for row in data_list], linestyle='-')
-    draw_chart2.ax3.plot([row[2] for row in data_list], linestyle='-')
-    draw_chart2.ax4.plot([row[3] for row in data_list], linestyle='-')
+    draw_chart2.ax1.plot([row[1] for row in data_list], linestyle='-')
+    draw_chart2.ax2.plot([row[2] for row in data_list], linestyle='-')
+    draw_chart2.ax3.plot([row[3] for row in data_list], linestyle='-')
+    draw_chart2.ax4.plot([row[7] for row in data_list], linestyle='-')
+
+
 
     draw_chart2.ax1.set_xlabel('')
     draw_chart2.ax2.set_xlabel('')
@@ -154,8 +158,23 @@ def draw_chart2(data_list):
     draw_chart2.ax1.set_ylabel('Temperature')
     draw_chart2.ax2.set_ylabel('Pressure')
     draw_chart2.ax3.set_ylabel('Light Value')
-    draw_chart2.ax4.set_ylabel('Humidity')
+    draw_chart2.ax4.set_ylabel('Altitude')
 
+    current_values = data_list[-1]
+    subtitle1 = customtkinter.CTkLabel(master=app, text=current_values[1])
+    subtitle1.place(relx=0.3, rely=0.1, anchor=tk.CENTER)
+    subtitle2 = customtkinter.CTkLabel(master=app, text=current_values[2])
+    subtitle2.place(relx=0.75, rely=0.1, anchor=tk.CENTER)
+    subtitle3 = customtkinter.CTkLabel(master=app, text=current_values[7])
+    subtitle3.place(relx=0.3, rely=0.52, anchor=tk.CENTER)
+    subtitle4 = customtkinter.CTkLabel(master=app, text=current_values[4])
+    subtitle4.place(relx=0.75, rely=0.52, anchor=tk.CENTER)
+    subtitle5 = customtkinter.CTkLabel(master=app, text=("RSSI: " + current_values[0]))
+    subtitle5.place(relx=0.05, rely=0.05, anchor=tk.CENTER)
+    subtitle6 = customtkinter.CTkLabel(master=app, text=("Latitude: " + current_values[5]))
+    subtitle6.place(relx=0.05, rely=0.15, anchor=tk.CENTER)
+    subtitle7 = customtkinter.CTkLabel(master=app, text=("Longitude: " + current_values[6]))
+    subtitle7.place(relx=0.05, rely=0.25, anchor=tk.CENTER)
     draw_chart2.figure.canvas.draw()
     draw_chart2.figure.canvas.flush_events()
 
